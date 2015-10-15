@@ -10,10 +10,23 @@ import socket
 
 
 class ChillServer:
+   response_template = (
+      '''HTTP/1.1 200 OK
+Connection: close
+Date: %s
+Server: ChillServer (v. Approximately Over 9000)
+Last-Modified: TODO
+Content-Length: %s
+Content-Type: TODO
+
+%s
+      '''
+   )
+
    def __init__(self, port):
       self.cool_port = port
 
-   def get_time_info_string():
+   def get_time_info_string(self):
       time_zone = time.tzname[0]
       exact_time = time.strftime("%d %b %Y %H:%M:%S")
       return ("%s %s" % (exact_time, time_zone))
@@ -21,28 +34,34 @@ class ChillServer:
    def do_GET(self, request_lines):
       response = None
       if request_lines[0][0:3] == 'GET':
-         match = re.search(r'GET /w+ HTTP/1.1', request_lines[0])
-         try:
+         match = re.search(r'GET .+ HTTP/1.1', request_lines[0])
+         #
+         # Removes "GET" and "HTTP/1.1" from the file_name
+         #
+         file_name = match.group(0)[4:-9]
+         if file_name == u'/' or file_name == '/':
+            response = self.response_template % (
+               self.get_time_info_string(),
+               os.path.getsize(file_name),
+               '''Welcome to the ChillServer. Have a cool stay!
+               
+And don't forget. What's cooler than being cool? Ice cold!
+               '''
+            )
 
-            with open(match.group(0)) as f:
-               response = (
-                  '''
-                  HTTP/1.1 200 OK
-                  Connection: close
-		  Date: %s
-                  Server: ChillServer (v. Over 9000)
-                  Last-Modified: TODO
-                  Content-Length: %s
-                  Content-Type: TODO
-                  ''' % (
-                     get_time_info_string(),
-                     os.path.getsize(match.group(0))  
-                  )
+      else:
+         try:
+	   
+            with open(file_name) as f:
+               response = self.response_template % (
+                  self.get_time_info_string(),
+                  os.path.getsize(match.group(0)),
+  		  f
                )
  
-         except Exception:
-            response = 	'HTTP/1.1 404 Not Found'
-                       
+            except AttributeError:
+               response = 'HTTP/1.1 404 Not Found'
+
       return response
 
    request_commands = {
@@ -55,7 +74,7 @@ class ChillServer:
       response = None
       for command in self.request_commands:
          if re.search(r'%s ' % command, request_lines[0]):
-            response = request_commands[command](request_lines)
+            response = self.request_commands[command](self, request_lines)
             if response:
                break
 
@@ -78,13 +97,14 @@ class ChillServer:
          request = client_connection.recv(8192)
          print("REQUEST: %s" % request.decode().split('\n'))
          response = self.handle_request(request)
-
+	 print(response)
+	 
          if response:
             client_connection.sendmsg([http_response])
          else:
             with open('errors.txt', 'a') as f:
                f.write('INVALID REQUEST: %s' % request.decode())
-
+ 	 
          client_connection.close()
 
 
