@@ -8,7 +8,7 @@ import time
 
 import socket
 
-
+#TODO Change response template to /r/n format
 class ChillServer:
     response_template = (
         '''HTTP/1.1 200 OK
@@ -17,7 +17,7 @@ Date: %s
 Server: ChillServer (v. Approximately Over 9000)
 Last-Modified: TODO
 Content-Length: %s
-Content-Type: TODO
+Content-Type: %s
 
 %s
         '''
@@ -38,31 +38,54 @@ Content-Type: TODO
             #
             # Removes "GET" and "HTTP/1.1" from the file_name
             #
-        
-        file_name = match.group(0)[4:-9]
-        if file_name == u'/' or file_name == '/':
-            response = self.response_template % (
-                self.get_time_info_string(),
-                os.path.getsize(file_name),
-                '''Welcome to the ChillServer. Have a cool stay!
-And don't forget. What's cooler than being cool? Ice cold!
-                '''
-            )
+	        
+            file_name = match.group(0)[4:-9]
+            if file_name == u'/' or file_name == '/':
+                response = self.response_template % (
+                    self.get_time_info_string(),
+                    os.path.getsize(file_name), 
+                    'text/html',
+                    '''
+		    Welcome to the ChillServer. Have a cool stay!\n
+		    And don't forget. What's cooler than being cool? Ice cold!
+                    '''
+	        )
+                response = response.encode()
+                #print(type(response))
 
-        else:
-            try:
+            else:
+                #
+                # Remove '/' from beginning of file name
+                #
+                file_name = file_name[1:]
+                try:
+                    if file_name[-3:] == 'htm' or file_name[-3:] == 'txt' or file_name[-4:] == 'html':
+                        with open(file_name, 'r') as f:
+                            print(file_name[-3:])
+                            file_type = 'text/html'
+                            response = self.response_template % (
+                                self.get_time_info_string(),
+                                os.path.getsize(file_name),
+                                file_type,
+                                f.read()
+                            )
+                            response = response.encode()
 
-                with open(file_name) as f:
-                    response = self.response_template % (
-                        self.get_time_info_string(),
-                        os.path.getsize(match.group(0)),
-                        f
-                    )
+                    elif file_name[-4:] == 'jpeg' or file_name[-3:] == 'jpg':
+                        with open(file_name, 'rb') as f:
+                            file_type = 'image/jpeg'
+                            response = self.response_template % (
+                                self.get_time_info_string(),
+                                os.path.getsize(file_name),
+                                file_type,
+                                ''
+                            )
+                            response = response.encode() + f.read()
 
-            except Exception:
-                response = 'HTTP/1.1 404 Not Found'
+                except FileNotFoundError:
+                    response = 'HTTP/1.1 404 Not Found'.encode()
 
-        return response.encode( )
+        return response
 
     request_commands = {
         'GET': do_GET,
@@ -76,8 +99,10 @@ And don't forget. What's cooler than being cool? Ice cold!
             if re.search(r'%s ' % command, request_lines[0]):
                 response = self.request_commands[command](self, request_lines)
 
-            if response:
-               break
+                if response:
+                    break
+        if not response:
+           respone = 'HTTP/1.1 404 Not Found'.encode()
 
         return response
  
@@ -95,8 +120,8 @@ And don't forget. What's cooler than being cool? Ice cold!
        
         while True:
             client_connection, client_address = self.cool_socket.accept()
-            request = client_connection.recv(8192)
-            print("REQUEST: %s" % request.decode().split('\n'))
+            request = client_connection.recv(45092)
+            print("REQUEST: %s" % request.decode())
             response = self.handle_request(request)
             print(response)
 
@@ -107,6 +132,7 @@ And don't forget. What's cooler than being cool? Ice cold!
                     f.write('INVALID REQUEST: %s' % request.decode())
 
             client_connection.close()
+
 
 if __name__ == '__main__':
     try:
