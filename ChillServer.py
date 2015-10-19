@@ -37,17 +37,16 @@ class ChillServer:
     def do_GET(self, request):
         response = None
         
-        # if request_lines[0][0:3] == 'GET':
-        match = re.search(r'GET .+ HTTP/1.1', request_lines[0])
+        match = re.search(r'GET .+ HTTP/1.1', request)
         if match:
             #
             # Removes "GET" and "HTTP/1.1" from the file_name
             #
             file_name = match.group(0)[4:-9]
-            last_mod_time = stat(file_name).st_mtime
+            last_mod_time = stat(file_name[1:]).st_mtime
             try:
 
-                match = re.search('If-modified-since: .+', request_lines[2]) 
+                match = re.search('If-modified-since: .+', request) 
 
                 if match:
                     if_mod_since = match.group(0)[18:]
@@ -78,7 +77,6 @@ class ChillServer:
                 # Remove '/' from beginning of file name
                 #
                 file_name = file_name[1:]
-                print("FILE_NAME: %s" % file_name)
                 try:
                     if (
                         file_name[-3:] == 'htm' or 
@@ -124,12 +122,12 @@ class ChillServer:
     }
 
     def handle_request(self, request):
-        # request_lines = request.decode().splitlines()
+        # request = request.decode().splitlines()
         request = request.decode()
         response = None
         for command in self.request_commands:
             if re.search(r'%s ' % command, request):
-                response = self.request_commands[command](self, request_lines)
+                response = self.request_commands[command](self, request)
 
                 if response:
                     break
