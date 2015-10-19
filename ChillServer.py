@@ -1,5 +1,4 @@
-import 
-        re
+import re
 
 import sys
 
@@ -29,9 +28,7 @@ class ChillServer:
 
     def __init__(self, port):
         self.cool_port = port
- 
-    def get_file_name(self, file_string):
-        
+
     def get_time_info_string(self):
         time_zone = time.tzname[0]
         exact_time = time.strftime("%d %b %Y %H:%M:%S")
@@ -42,21 +39,21 @@ class ChillServer:
         
         # if request_lines[0][0:3] == 'GET':
         match = re.search(r'GET .+ HTTP/1.1', request_lines[0])
-            if match:
-               #
-               # Removes "GET" and "HTTP/1.1" from the file_name
-               #
-               file_name = match.group(0)[4:-9]
+        if match:
+            #
+            # Removes "GET" and "HTTP/1.1" from the file_name
+            #
+            file_name = match.group(0)[4:-9]
             last_mod_time = stat(file_name).st_mtime
             try:
 
                 match = re.search('If-modified-since: .+', request_lines[2]) 
 
                 if match:
-                   if_mod_since = match.group(0)[18:]
-                   if last_mod_time > float(if_mod_since):
-                       response = not_mod_template % self.get_time_info_string()
-                       return response.encode()
+                    if_mod_since = match.group(0)[18:]
+                    if last_mod_time > float(if_mod_since):
+                        response = not_mod_template % self.get_time_info_string()
+                        return response.encode()
 
             except IndexError:
                 pass
@@ -66,7 +63,7 @@ class ChillServer:
                     self.get_time_info_string(),
                     path.getsize(file_name), 
                     'text/html',
-	        )
+                )
 
                 response += (
                     'Welcome to the ChillServer. Have a cool stay!\r\n'
@@ -119,7 +116,7 @@ class ChillServer:
                 except FileNotFoundError:
                     response = 'HTTP/1.1 404 Not Found'.encode()
 
-        return response
+            return response
 
     request_commands = {
         'GET': do_GET,
@@ -151,13 +148,13 @@ class ChillServer:
         # AF_INET = Internet Protocol v4
         # SOCK_STREAM = TCP
         #  
-        self.cool_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        cool_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 #       self.cool_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.cool_socket.bind(('', self.cool_port))
-        self.cool_socket.listen(1)
+        cool_socket.bind(('', self.cool_port))
+        cool_socket.listen(1)
        
         while True:
-            client_connection, client_address = self.cool_socket.accept()
+            client_connection, client_address = cool_socket.accept()
             request = client_connection.recv(1048576)
             print("REQUEST: %s" % request.decode())
             response = self.handle_request(request)
