@@ -54,9 +54,6 @@ class ChillServer:
                         response = not_mod_template % self.get_time_info_string()
                         return response.encode()
 
-            except IndexError:
-                pass
-
             if file_name == u'/' or file_name == '/':
                 response = self.ok_template % (
                     self.get_time_info_string(),
