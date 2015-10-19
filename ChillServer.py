@@ -1,10 +1,10 @@
 import re
 
-import sys
-
 import time
 
 import socket
+
+from sys import argv
 
 from os import path, stat
 
@@ -34,6 +34,30 @@ class ChillServer:
         exact_time = time.strftime("%d %b %Y %H:%M:%S")
         return ("%s %s" % (exact_time, time_zone))
 
+    def modified(self, file_name, request):
+        try:
+            
+            last_mod_time = stat(file_name).st_mtime
+ 
+        except FileNotFoundError:
+            try: 
+             
+                last_mod_time = stat(file_name[1:]).st_mtime
+      
+            except FileNotFoundError:
+                return True
+
+        match = re.search('If-modified-since: .+', request)
+        if match:
+            if_mod_since = match.group(0)[18:]
+            if last_mod_time < float(if_mod_since):
+                return False
+
+             return True
+
+    def file_is_root(self, file_name, request):
+        return file_name == u'/' or file_name == '/'
+
     def do_GET(self, request):
         response = None
         
@@ -43,18 +67,12 @@ class ChillServer:
             # Removes "GET" and "HTTP/1.1" from the file_name
             #
             file_name = match.group(0)[4:-9]
-            last_mod_time = stat(file_name[1:]).st_mtime
-            try:
-
-                match = re.search('If-modified-since: .+', request) 
-
-                if match:
-                    if_mod_since = match.group(0)[18:]
-                    if last_mod_time > float(if_mod_since):
-                        response = not_mod_template % self.get_time_info_string()
-                        return response.encode()
-
-            if file_name == u'/' or file_name == '/':
+            
+            if not self.modified(file_name, request):
+                response = self.not_mod_template % self.get_time_info_string()
+                return response.encode()
+            
+            if self.is_root(file_name, request):
                 response = self.ok_template % (
                     self.get_time_info_string(),
                     path.getsize(file_name), 
@@ -167,7 +185,7 @@ class ChillServer:
 if __name__ == '__main__':
     try:
 
-        server = ChillServer(int(sys.argv[1]))
+        server = ChillServer(int(argv[1]))
         server.serve_forever()
 
     except IndexError:
