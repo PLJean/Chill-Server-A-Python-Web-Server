@@ -2,10 +2,6 @@ Chill Server
 ============
 The coolest Python 3 webserver. Runs best with Python 3.4.
 
-Install
-=======
-Run: python3 setup.py
-
 Run Server
 ==========
 Run: python3 ChillServer [port number]
